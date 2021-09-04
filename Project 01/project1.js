@@ -14,11 +14,11 @@ function composite(bgImg, fgImg, fgOpac, fgPos) {
         var fgRed = fgImg.data[i];
         var fgGreen = fgImg.data[i + 1];
         var fgBlue = fgImg.data[i + 2];
-        var fgAlpha = fgImg.data[i + 3];
+        var fgAlpha = fgImg.data[i + 3] / 255;
 
         bgImg.data[i] = (fgAlpha * fgRed) + ((1 - fgAlpha) * bgImg.data[i]);
         bgImg.data[i + 1] = (fgAlpha * fgGreen) + ((1 - fgAlpha) * bgImg.data[i + 1]);
         bgImg.data[i + 2] = (fgAlpha * fgBlue) + ((1 - fgAlpha) * bgImg.data[i + 2]);
-        bgImg.data[i + 3] = fgAlpha + ((1 - fgAlpha) * bgImg[i + 3]);
+        bgImg.data[i + 3] = (fgAlpha + ((1 - fgAlpha) * (bgImg.data[i + 3] / 255))) * 255;
     }
 }
