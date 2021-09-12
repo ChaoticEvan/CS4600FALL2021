@@ -8,7 +8,7 @@ function GetTransform( positionX, positionY, rotation, scale )
 	var n = scale * positionX;
 	var k = scale * positionY;	
 
-	return Array( x, y, 0, -y, x, 0, n, k, 1 );
+	return Array( x, y, 0, -y, x, 0, positionX, positionY, 1 );
 }
 
 // Returns a 3x3 transformation matrix as an array of 9 values in column-major order.
