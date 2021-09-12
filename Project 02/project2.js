@@ -5,10 +5,10 @@ function GetTransform( positionX, positionY, rotation, scale )
 {
 	var x = Math.cos(rotation * (Math.PI / 180));
 	var y = Math.sin(rotation * (Math.PI / 180));
-	var n = scale * positionX;
-	var k = scale * positionY;	
+	var n = scale;
+	var k = scale;	
 
-	return Array( x, y, 0, -y, x, 0, positionX, positionY, 1 );
+	return Array( n * x, k * y, 0, -n * y, k * x, 0, positionX, positionY, 1 );
 }
 
 // Returns a 3x3 transformation matrix as an array of 9 values in column-major order.
