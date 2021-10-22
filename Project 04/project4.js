@@ -45,19 +45,25 @@ function ConvertToDegrees(number) {
 // Vertex shader source code
 var modelVS = `
 	attribute vec3 pos;
+	attribute vec2 txc;
 	uniform mat4 mvp;
+	varying vec2 texCoord;
 
 	void main()
 	{
 		gl_Position = mvp * vec4(pos,1);
+		texCoord = txc;
 	}
 `;
 // Fragment shader source code
 var modelFS = `
 	precision mediump float;
+	uniform sampler2D tex;
+	varying vec2 texCoord;
+
 	void main()
 	{
-		gl_FragColor = vec4(1,gl_FragCoord.z*gl_FragCoord.z,0,1);
+		gl_FragColor = texture2D(tex, texCoord);
 	}
 `;
 class MeshDrawer {
@@ -66,6 +72,7 @@ class MeshDrawer {
 		this.prog = InitShaderProgram(modelVS, modelFS);
 		this.mvp = gl.getUniformLocation(this.prog, 'mvp');
 		this.vertPos = gl.getAttribLocation(this.prog, 'pos');
+		this.sampler = gl.getUniformLocation(this.prog, 'tex');
 	}
 
 	// This method is called every time the user opens an OBJ file.
@@ -84,12 +91,17 @@ class MeshDrawer {
 	// 
 	// Note that this method can be called multiple times.
 	setMesh(vertPos, texCoords) {
-		// [TO-DO] Get texCoords integrated
 		this.vertbuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertPos), gl.STATIC_DRAW);
+
+		this.texBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.texBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
+
 		this.numTriangles = vertPos.length / 3;
 		this.vertPos = vertPos;
+		this.texCoords = texCoords
 	}
 
 	// This method is called when the user changes the state of the
@@ -111,24 +123,45 @@ class MeshDrawer {
 	// The argument is the transformation matrix, the same matrix returned
 	// by the GetModelViewProjection function above.
 	draw(trans) {
-		// [TO-DO] Maybe need to change this code for adding texture?
 		gl.useProgram(this.prog);
 		gl.uniformMatrix4fv(this.mvp, false, trans);
+
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.vertexAttribPointer(this.vertPos, 3, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(this.vertPos);
+
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, this.tex);
+		gl.uniform1i(this.sampler, 0);
+
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
 	}
 
 	// This method is called to set the texture of the mesh.
 	// The argument is an HTML IMG element containing the texture data.
 	setTexture(img) {
-		// [TO-DO] Bind the texture
+		this.tex = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, this.tex);
 
 		// You can set the texture image data using the following command.
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+		gl.generateMipmap(gl.TEXTURE_2D);
 
-		// [TO-DO] Now that we have a texture, it might be a good idea to set
-		// some uniform parameter(s) of the fragment shader, so that it uses the texture.
+		gl.texParameteri(
+			gl.TEXTURE_2D,
+			gl.TEXTURE_MIN_FILTER,
+			gl.LINEAR_MIPMAP_LINEAR
+		);
+		gl.texParameteri(
+			gl.TEXTURE_2D,
+			gl.TEXTURE_WRAP_S,
+			gl.REPEAT
+		);
+		gl.texParameteri(
+			gl.TEXTURE_2D,
+			gl.TEXTURE_WRAP_T,
+			gl.REPEAT
+		);
 	}
 
 	// This method is called when the user changes the state of the
