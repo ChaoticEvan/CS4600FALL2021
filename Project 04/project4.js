@@ -3,30 +3,53 @@
 // It returns the combined 4x4 transformation matrix as an array in column-major order.
 // The given projection matrix is also a 4x4 matrix stored as an array in column-major order.
 // You can use the MatrixMult function defined in project4.html to multiply two 4x4 matrices in the same format.
-function GetModelViewProjection( projectionMatrix, translationX, translationY, translationZ, rotationX, rotationY )
-{
-	// [TO-DO] Modify the code below to form the transformation matrix.
+function GetModelViewProjection(projectionMatrix, translationX, translationY, translationZ, rotationX, rotationY) {
+	var rotXDeg = ConvertToDegrees(rotationX);
+	var rotYDeg = ConvertToDegrees(rotationY);
+
+	var rotationXMat = [
+		1, 0, 0, 0,
+		0, Math.cos(rotXDeg), -Math.sin(rotXDeg), 0,
+		0, Math.sin(rotXDeg), Math.cos(rotXDeg), 0,
+		0, 0, 0, 1
+	];
+	var rotationYMat = [
+		Math.cos(rotYDeg), 0, Math.sin(rotYDeg), 0,
+		0, 1, 0, 0,
+		-Math.sin(rotYDeg), 0, Math.cos(rotYDeg), 0,
+		0, 0, 0, 1
+	];
+
+	var rotationMatrix = MatrixMult(rotationXMat, rotationYMat);
+
+
 	var trans = [
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
 		translationX, translationY, translationZ, 1
 	];
-	var mvp = MatrixMult( projectionMatrix, trans );
+
+	trans = MatrixMult(trans, rotationMatrix);
+
+	var mvp = MatrixMult(projectionMatrix, trans);
 	return mvp;
+}
+
+// Helper function to conver to degrees. 
+function ConvertToDegrees(number) {
+	return number * (180 / Math.PI);
 }
 
 
 // [TO-DO] Complete the implementation of the following class.
 
-class MeshDrawer
-{
+class MeshDrawer {
 	// The constructor is a good place for taking care of the necessary initializations.
-	constructor()
-	{
+	constructor() {
 		// [TO-DO] initializations
 	}
-	
+
 	// This method is called every time the user opens an OBJ file.
 	// The arguments of this function is an array of 3D vertex positions
 	// and an array of 2D texture coordinates.
@@ -37,49 +60,44 @@ class MeshDrawer
 	// Similarly, every two consecutive elements in the texCoords array
 	// form the texture coordinate of a vertex.
 	// Note that this method can be called multiple times.
-	setMesh( vertPos, texCoords )
-	{
+	setMesh(vertPos, texCoords) {
 		// [TO-DO] Update the contents of the vertex buffer objects.
 		this.numTriangles = vertPos.length / 3;
 	}
-	
+
 	// This method is called when the user changes the state of the
 	// "Swap Y-Z Axes" checkbox. 
 	// The argument is a boolean that indicates if the checkbox is checked.
-	swapYZ( swap )
-	{
+	swapYZ(swap) {
 		// [TO-DO] Set the uniform parameter(s) of the vertex shader
 	}
-	
+
 	// This method is called to draw the triangular mesh.
 	// The argument is the transformation matrix, the same matrix returned
 	// by the GetModelViewProjection function above.
-	draw( trans )
-	{
+	draw(trans) {
 		// [TO-DO] Complete the WebGL initializations before drawing
 
-		gl.drawArrays( gl.TRIANGLES, 0, this.numTriangles );
+		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
 	}
-	
+
 	// This method is called to set the texture of the mesh.
 	// The argument is an HTML IMG element containing the texture data.
-	setTexture( img )
-	{
+	setTexture(img) {
 		// [TO-DO] Bind the texture
 
 		// You can set the texture image data using the following command.
-		gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img );
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
 
 		// [TO-DO] Now that we have a texture, it might be a good idea to set
 		// some uniform parameter(s) of the fragment shader, so that it uses the texture.
 	}
-	
+
 	// This method is called when the user changes the state of the
 	// "Show Texture" checkbox. 
 	// The argument is a boolean that indicates if the checkbox is checked.
-	showTexture( show )
-	{
+	showTexture(show) {
 		// [TO-DO] set the uniform parameter(s) of the fragment shader to specify if it should use the texture.
 	}
-	
+
 }
