@@ -89,6 +89,7 @@ class MeshDrawer {
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertPos), gl.STATIC_DRAW);
 		this.numTriangles = vertPos.length / 3;
+		this.vertPos = vertPos;
 	}
 
 	// This method is called when the user changes the state of the
@@ -96,14 +97,14 @@ class MeshDrawer {
 	// The argument is a boolean that indicates if the checkbox is checked.
 	swapYZ(swap) {
 		// [TO-DO] Set the uniform parameter(s) of the vertex shader
-
-
-		if (swap) {
-
+		for (let i = 0; i < this.vertPos.length; i += 3) {
+			var tempY = this.vertPos[i + 1];
+			this.vertPos[i + 1] = this.vertPos[i + 2];
+			this.vertPos[i + 2] = tempY;
 		}
-		else {
 
-		}
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertPos), gl.STATIC_DRAW);
 	}
 
 	// This method is called to draw the triangular mesh.
