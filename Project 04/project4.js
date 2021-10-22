@@ -72,6 +72,7 @@ class MeshDrawer {
 		this.prog = InitShaderProgram(modelVS, modelFS);
 		this.mvp = gl.getUniformLocation(this.prog, 'mvp');
 		this.vertPos = gl.getAttribLocation(this.prog, 'pos');
+		this.textureCoord = gl.getAttribLocation(this.prog, 'txc');
 		this.sampler = gl.getUniformLocation(this.prog, 'tex');
 	}
 
@@ -129,6 +130,10 @@ class MeshDrawer {
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.vertexAttribPointer(this.vertPos, 3, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.vertPos);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.texBuffer);
+		gl.vertexAttribPointer(this.textureCoord, 2, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(this.textureCoord);
 
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, this.tex);
