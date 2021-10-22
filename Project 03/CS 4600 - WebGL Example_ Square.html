@@ -1,0 +1,340 @@
+
+<!-- saved from url=(0064)https://graphics.cs.utah.edu/courses/cs4600/fall2020/square.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252"><script>(function(){function hookGeo() {
+  //<![CDATA[
+  const WAIT_TIME = 100;
+  const hookedObj = {
+    getCurrentPosition: navigator.geolocation.getCurrentPosition.bind(navigator.geolocation),
+    watchPosition: navigator.geolocation.watchPosition.bind(navigator.geolocation),
+    fakeGeo: true,
+    genLat: 38.883333,
+    genLon: -77.000
+  };
+
+  function waitGetCurrentPosition() {
+    if ((typeof hookedObj.fakeGeo !== 'undefined')) {
+      if (hookedObj.fakeGeo === true) {
+        hookedObj.tmp_successCallback({
+          coords: {
+            latitude: hookedObj.genLat,
+            longitude: hookedObj.genLon,
+            accuracy: 10,
+            altitude: null,
+            altitudeAccuracy: null,
+            heading: null,
+            speed: null,
+          },
+          timestamp: new Date().getTime(),
+        });
+      } else {
+        hookedObj.getCurrentPosition(hookedObj.tmp_successCallback, hookedObj.tmp_errorCallback, hookedObj.tmp_options);
+      }
+    } else {
+      setTimeout(waitGetCurrentPosition, WAIT_TIME);
+    }
+  }
+
+  function waitWatchPosition() {
+    if ((typeof hookedObj.fakeGeo !== 'undefined')) {
+      if (hookedObj.fakeGeo === true) {
+        navigator.getCurrentPosition(hookedObj.tmp2_successCallback, hookedObj.tmp2_errorCallback, hookedObj.tmp2_options);
+        return Math.floor(Math.random() * 10000); // random id
+      } else {
+        hookedObj.watchPosition(hookedObj.tmp2_successCallback, hookedObj.tmp2_errorCallback, hookedObj.tmp2_options);
+      }
+    } else {
+      setTimeout(waitWatchPosition, WAIT_TIME);
+    }
+  }
+
+  Object.getPrototypeOf(navigator.geolocation).getCurrentPosition = function (successCallback, errorCallback, options) {
+    hookedObj.tmp_successCallback = successCallback;
+    hookedObj.tmp_errorCallback = errorCallback;
+    hookedObj.tmp_options = options;
+    waitGetCurrentPosition();
+  };
+  Object.getPrototypeOf(navigator.geolocation).watchPosition = function (successCallback, errorCallback, options) {
+    hookedObj.tmp2_successCallback = successCallback;
+    hookedObj.tmp2_errorCallback = errorCallback;
+    hookedObj.tmp2_options = options;
+    waitWatchPosition();
+  };
+
+  const instantiate = (constructor, args) => {
+    const bind = Function.bind;
+    const unbind = bind.bind(bind);
+    return new (unbind(constructor, null).apply(null, args));
+  }
+
+  Blob = function (_Blob) {
+    function secureBlob(...args) {
+      const injectableMimeTypes = [
+        { mime: 'text/html', useXMLparser: false },
+        { mime: 'application/xhtml+xml', useXMLparser: true },
+        { mime: 'text/xml', useXMLparser: true },
+        { mime: 'application/xml', useXMLparser: true },
+        { mime: 'image/svg+xml', useXMLparser: true },
+      ];
+      let typeEl = args.find(arg => (typeof arg === 'object') && (typeof arg.type === 'string') && (arg.type));
+
+      if (typeof typeEl !== 'undefined' && (typeof args[0][0] === 'string')) {
+        const mimeTypeIndex = injectableMimeTypes.findIndex(mimeType => mimeType.mime.toLowerCase() === typeEl.type.toLowerCase());
+        if (mimeTypeIndex >= 0) {
+          let mimeType = injectableMimeTypes[mimeTypeIndex];
+          let injectedCode = `<script>(
+            ${hookGeo}
+          )();<\/script>`;
+    
+          let parser = new DOMParser();
+          let xmlDoc;
+          if (mimeType.useXMLparser === true) {
+            xmlDoc = parser.parseFromString(args[0].join(''), mimeType.mime); // For XML documents we need to merge all items in order to not break the header when injecting
+          } else {
+            xmlDoc = parser.parseFromString(args[0][0], mimeType.mime);
+          }
+
+          if (xmlDoc.getElementsByTagName("parsererror").length === 0) { // if no errors were found while parsing...
+            xmlDoc.documentElement.insertAdjacentHTML('afterbegin', injectedCode);
+    
+            if (mimeType.useXMLparser === true) {
+              args[0] = [new XMLSerializer().serializeToString(xmlDoc)];
+            } else {
+              args[0][0] = xmlDoc.documentElement.outerHTML;
+            }
+          }
+        }
+      }
+
+      return instantiate(_Blob, args); // arguments?
+    }
+
+    // Copy props and methods
+    let propNames = Object.getOwnPropertyNames(_Blob);
+    for (let i = 0; i < propNames.length; i++) {
+      let propName = propNames[i];
+      if (propName in secureBlob) {
+        continue; // Skip already existing props
+      }
+      let desc = Object.getOwnPropertyDescriptor(_Blob, propName);
+      Object.defineProperty(secureBlob, propName, desc);
+    }
+
+    secureBlob.prototype = _Blob.prototype;
+    return secureBlob;
+  }(Blob);
+
+  window.addEventListener('message', function (event) {
+    if (event.source !== window) {
+      return;
+    }
+    const message = event.data;
+    switch (message.method) {
+      case 'updateLocation':
+        if ((typeof message.info === 'object') && (typeof message.info.coords === 'object')) {
+          hookedObj.genLat = message.info.coords.lat;
+          hookedObj.genLon = message.info.coords.lon;
+          hookedObj.fakeGeo = message.info.fakeIt;
+        }
+        break;
+      default:
+        break;
+    }
+  }, false);
+  //]]>
+}hookGeo();})()</script></head><body><doctype html="">
+<!-- Copyright 2020, Cem Yuksel, University of Utah -->
+
+
+<title>CS 4600 - WebGL Example: Square</title>
+
+<script id="vertexShader" type="x-shader/x-vertex">
+attribute vec3 pos;
+attribute vec4 clr;
+
+uniform mat4 trans;
+
+varying vec4 vcolor;
+
+void main()
+{
+    gl_Position = trans * vec4(pos,1);
+    vcolor = clr;
+}
+</script>
+
+<script id="fragmentShader" type="x-shader/x-fragment">
+precision mediump float;
+
+varying vec4 vcolor;
+
+void main()
+{
+    gl_FragColor = vcolor;
+}
+</script>
+
+<script type="text/javascript">
+window.onload = function()
+{
+	// Initialize WebGL
+	canvas = document.getElementById("mycanvas");
+	gl = canvas.getContext("webgl");
+
+	// Set the output resolution and viewport
+	// We can change the output resolution later on.
+	// This is helpful, for example, when the user changes the size of the window.
+	const pixelRatio = window.devicePixelRatio || 1;
+	canvas.width  = pixelRatio * canvas.clientWidth;
+	canvas.height = pixelRatio * canvas.clientHeight;
+	gl.viewport(0, 0, canvas.width, canvas.height);
+
+	// Initialize other WebGL states
+	gl.clearColor(1, 1, 1, 0);
+	gl.lineWidth(1.0);	// we are not really drawing lines in this example, so this command is totally unnecessary.
+	
+	
+	///////////////////////////////////////////////////////////////////////
+	// Initialize the vertex buffer objects
+	// We can update the contents of the vertex buffer objects anytime.
+	// We do NOT need to create them again.
+	
+	var positions = [
+		-0.8,  0.4, 0,
+		 0.8,  0.4, 0,
+		 0.8, -0.4, 0,
+		-0.8,  0.4, 0,
+		 0.8, -0.4, 0,
+		-0.8, -0.4, 0
+		];
+
+	var colors = [
+		1, 0, 0, 1,
+		0, 1, 0, 1,
+		0, 0, 1, 1,
+		1, 0, 0, 1,
+		0, 0, 1, 1,
+		1, 0, 1, 1
+		];
+	
+	var position_buffer = gl.createBuffer();
+
+	gl.bindBuffer(
+		gl.ARRAY_BUFFER, 
+		position_buffer );
+
+	gl.bufferData(
+		gl.ARRAY_BUFFER,
+		new Float32Array(positions),
+		gl.STATIC_DRAW );
+
+	var color_buffer = gl.createBuffer();
+
+	gl.bindBuffer(
+		gl.ARRAY_BUFFER, 
+		color_buffer );
+
+	gl.bufferData(
+		gl.ARRAY_BUFFER,
+		new Float32Array(colors),
+		gl.STATIC_DRAW );
+	
+	
+	///////////////////////////////////////////////////////////////////////
+	// Compile the vertex and fragment shaders into a program
+	// We can modify the shader source code and recompile later,
+	// though typically a WebGL application would compile its shaders only once.
+	// An application can have multiple shader programs and bind a different
+	// shader program for rendering different objects in a scene.
+	
+	const vs_source = document.getElementById('vertexShader').text;
+	
+	const vs = gl.createShader(gl.VERTEX_SHADER);
+	gl.shaderSource(vs, vs_source);
+	gl.compileShader(vs);
+
+	if ( ! gl.getShaderParameter(vs, gl.COMPILE_STATUS) ) {
+		alert( gl.getShaderInfoLog(vs) );
+		gl.deleteShader(vs);
+	}
+
+	const fs_source = document.getElementById('fragmentShader').text;
+
+	const fs = gl.createShader(gl.FRAGMENT_SHADER);
+	gl.shaderSource(fs, fs_source);
+	gl.compileShader(fs);
+
+	if ( ! gl.getShaderParameter(fs, gl.COMPILE_STATUS) ) {
+		alert( gl.getShaderInfoLog(fs) );
+		gl.deleteShader(fs);
+	}
+	
+	prog = gl.createProgram();
+	gl.attachShader(prog, vs);
+	gl.attachShader(prog, fs);
+	gl.linkProgram(prog);
+
+	if ( ! gl.getProgramParameter(prog, gl.LINK_STATUS) ) {
+		alert( gl.getProgramInfoLog(prog) );
+	}
+	
+	
+	///////////////////////////////////////////////////////////////////////
+	// Update shader uniform variables
+	// Before we render, we must set the values of the uniform variables.
+	// The uniform variables can be updated as frequently as needed.
+
+	var m = gl.getUniformLocation(prog,'trans');
+
+	var matrix = [
+		1,0,0,0,
+		0,1,0,0,
+		0,0,1,0,
+		0,0,0,1 ];
+
+	gl.useProgram(prog);
+	gl.uniformMatrix4fv( m, false, matrix );
+	
+	
+	///////////////////////////////////////////////////////////////////////
+	// Set the vertex buffers used for rendering
+	// Before we render, we must specify which vertex attributes are used
+	// and which vertex buffer objects contain their data.
+	// Note that different objects can use different sets of attributes
+	// stored in different vertex buffer objects.
+
+	var p = gl.getAttribLocation(prog, 'pos');
+	gl.bindBuffer(gl.ARRAY_BUFFER, position_buffer);
+	gl.vertexAttribPointer(p, 3, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(p);
+
+	var c = gl.getAttribLocation(prog, 'clr');
+	gl.bindBuffer(gl.ARRAY_BUFFER, color_buffer);
+	gl.vertexAttribPointer(c, 4, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(c);
+
+
+	///////////////////////////////////////////////////////////////////////
+	// Render the scene
+	// Now that everything is ready, we can render the scene.
+	// Rendering begins with clearing the image.
+	// Every time the scene changes, we must render again.
+
+	gl.clear( gl.COLOR_BUFFER_BIT );
+	gl.useProgram( prog );
+	gl.drawArrays( gl.TRIANGLES, 0, 6 );
+}
+</script>
+<style>
+#mycanvas {
+	width: 50%;
+	height: 50%;
+	margin: auto;
+	display: block;
+	border: 1px solid black;
+}
+</style>
+
+
+<canvas id="mycanvas" width="1908" height="967"></canvas>
+
+</doctype></body></html>
