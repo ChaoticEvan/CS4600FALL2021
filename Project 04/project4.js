@@ -102,7 +102,7 @@ class MeshDrawer {
 
 		this.numTriangles = vertPos.length / 3;
 		this.vertPos = vertPos;
-		this.texCoords = texCoords
+		this.texCoords = texCoords;
 	}
 
 	// This method is called when the user changes the state of the
@@ -173,7 +173,12 @@ class MeshDrawer {
 	// "Show Texture" checkbox. 
 	// The argument is a boolean that indicates if the checkbox is checked.
 	showTexture(show) {
-		// [TO-DO] set the uniform parameter(s) of the fragment shader to specify if it should use the texture.
+		if (show) {
+
+		}
+		else {
+
+		}
 	}
 
 }
