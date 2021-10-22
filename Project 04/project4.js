@@ -115,8 +115,6 @@ class MeshDrawer {
 		gl.uniformMatrix4fv(this.mvp, false, trans);
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.vertexAttribPointer(this.vertPos, 3, gl.FLOAT, false, 0, 0);
-		gl.enableVertexAttribArray(this.vertPos);
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.linebuffer);
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
 	}
 
