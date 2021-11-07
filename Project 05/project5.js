@@ -40,16 +40,30 @@ function ConvertToDegrees(number) {
 
 
 // Vertex shader source code
-var modelVS = `
+	var modelVS = `
 	attribute vec3 pos;
+	attribute vec3 vertNormal;
 	attribute vec2 txc;
+
+	uniform mat4 normMat;
 	uniform mat4 mvp;
+	uniform mat4 mv;
+	uniform vec3 lightDir;
+	
 	varying vec2 texCoord;
+	varying vec3 lighting;
 
 	void main()
 	{
-		gl_Position = mvp * vec4(pos,1);
+		vec4 camSpacePosition = mvp * vec4(pos, 1.0);
+		gl_Position = mvp * camSpacePosition;
 		texCoord = txc;
+
+		vec3 directionalLightColor = vec3(1, 1, 1);
+
+		vec4 transformedNormal = normMat * vec4(vertNormal, 1.0);
+		float directional = max(dot(transformedNormal.xyz, lightDir), 0.0);
+		lighting = directionalLightColor * directional;
 	}
 `;
 // Fragment shader source code
@@ -57,10 +71,12 @@ var modelFS = `
 	precision mediump float;
 	uniform sampler2D tex;
 	varying vec2 texCoord;
+	varying vec3 lighting;
 
 	void main()
 	{
-		gl_FragColor = texture2D(tex, texCoord);
+		vec4 texelColor = texture2D(tex, texCoord);
+		gl_FragColor = vec4(texelColor.rgb * lighting, texelColor.a);
 	}
 `;
 
@@ -71,10 +87,14 @@ class MeshDrawer {
 	constructor() {
 		this.prog = InitShaderProgram(modelVS, modelFS);
 		this.mvp = gl.getUniformLocation(this.prog, 'mvp');
+		this.normMat = gl.getUniformLocation(this.prog, 'normMat');
+		this.modelView = gl.getUniformLocation(this.prog, 'mv');
 		this.vertPos = gl.getAttribLocation(this.prog, 'pos');
 		this.textureCoord = gl.getAttribLocation(this.prog, 'txc');
 		this.sampler = gl.getUniformLocation(this.prog, 'tex');
-	}
+		this.lightDir = gl.getUniformLocation(this.prog, 'lightDir');
+		this.normalVert = gl.getAttribLocation(this.prog, 'vertNormal')
+	}	
 
 	// This method is called every time the user opens an OBJ file.
 	//
@@ -102,12 +122,13 @@ class MeshDrawer {
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
 
 		this.normalBuffer = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
 
 		this.numTriangles = vertPos.length / 3;
 		this.vertPos = vertPos;
 		this.texCoords = texCoords;
+		this.normalVert = normals;
 	}
 
 	// This method is called when the user changes the state of the
@@ -130,9 +151,10 @@ class MeshDrawer {
 	// by the GetModelViewProjection function above, and the normal
 	// transformation matrix, which is the inverse-transpose of matrixMV.
 	draw(matrixMVP, matrixMV, matrixNormal) {
-		// [TO-DO] Complete the WebGL initializations before drawing
 		gl.useProgram(this.prog);
 		gl.uniformMatrix4fv(this.mvp, false, matrixMVP);
+		gl.uniformMatrix4fv(this.modelView, false, matrixMV);
+		gl.uniformMatrix4fv(this.normMat, false, matrixNormal);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.vertexAttribPointer(this.vertPos, 3, gl.FLOAT, false, 0, 0);
@@ -148,7 +170,7 @@ class MeshDrawer {
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
 		gl.vertexAttribPointer(this.textureCoord, 2, gl.FLOAT, false, 0, 0);
-
+		gl.enableVertexAttribArray(this.normalVert);		
 
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
 	}
@@ -195,7 +217,7 @@ class MeshDrawer {
 
 	// This method is called to set the incoming light direction
 	setLightDir(x, y, z) {
-		// [TO-DO] set the uniform parameter(s) of the fragment shader to specify the light direction.
+		gl.uniform3f(this.lightDir, x, y, z);
 	}
 
 	// This method is called to set the shininess of the material
