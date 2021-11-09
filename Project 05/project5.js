@@ -48,13 +48,26 @@ var modelVS = `
 	uniform mat4 mvp;
 	uniform mat4 mv;
 	uniform mat4 normMat;
+	uniform vec3 lightDir;	
 
-	varying vec2 texCoord;
+	varying vec2 texCoord;	
+	varying float cosTheta;
+	varying float cosPhi;
 
 	void main()
 	{
-		gl_Position = mvp * vec4(pos,1);
+		gl_Position = mvp * vec4(pos, 1);
 		texCoord = txc;
+
+
+		// rough math:
+		// ((norm * lightDir) * texCoord)
+		// + (lightCol * (norm * ( (lightDir - pos) / |lightDir - pos|) )^alpha ) 
+
+		vec4 transformedNormal = normMat * vec4(norm, 1.0);
+		cosTheta = dot(transformedNormal, vec4(lightDir,1));		
+		vec3 h = (lightDir - normalize(pos)) / (abs(lightDir - normalize(pos)));
+		cosPhi = dot(transformedNormal, vec4(h, 1));
 	}
 `;
 // Fragment shader source code
@@ -62,18 +75,19 @@ var modelFS = `
 	precision mediump float;
 
 	uniform sampler2D tex;
-	uniform vec3 lightDir;
+	uniform float alpha;
 
 	varying vec2 texCoord;
+	varying float cosTheta;
+	varying float cosPhi;
 
 	void main()
 	{
 		vec3 lightCol = vec3(1,1,1);
-		gl_FragColor = texture2D(tex, texCoord);
+		vec4 texelColor = texture2D(tex, texCoord);
+		gl_FragColor = (cosTheta * texelColor) + vec4((lightCol * pow(cosPhi, alpha), 1));				
 	}
 `;
-
-// [TO-DO] Complete the implementation of the following class.
 
 class MeshDrawer {
 	// The constructor is a good place for taking care of the necessary initializations.
@@ -85,6 +99,7 @@ class MeshDrawer {
 		this.lightDir = gl.getUniformLocation(this.prog, 'lightDir');
 		this.mv = gl.getUniformLocation(this.prog, 'mv');
 		this.normMat = gl.getUniformLocation(this.prog, 'normMat');
+		this.alpha = gl.getUniformLocation(this.prog, 'alpha');
 
 		this.vertPos = gl.getAttribLocation(this.prog, 'pos');
 		this.textureCoord = gl.getAttribLocation(this.prog, 'txc');
@@ -212,12 +227,14 @@ class MeshDrawer {
 
 	// This method is called to set the incoming light direction
 	setLightDir(x, y, z) {
+		gl.useProgram(this.prog);
 		gl.uniform3f(this.lightDir, x, y, z);
 	}
 
 	// This method is called to set the shininess of the material
 	setShininess(shininess) {
-		// [TO-DO] set the uniform parameter(s) of the fragment shader to specify the shininess.
+		gl.useProgram(this.prog);
+		gl.uniform1i(this.alpha, shininess);
 	}
 }
 
