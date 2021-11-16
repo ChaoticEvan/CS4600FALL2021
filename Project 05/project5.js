@@ -47,7 +47,7 @@ var modelVS = `
 
 	uniform mat4 mvp;
 	uniform mat4 mv;
-	uniform mat4 normMat;
+	uniform mat3 normMat;
 	uniform vec3 lightDir;	
 
 	varying vec2 texCoord;	
@@ -64,10 +64,10 @@ var modelVS = `
 		// ((norm * lightDir) * texCoord)
 		// + (lightCol * (norm * ( (lightDir - pos) / |lightDir - pos|) )^alpha ) 
 
-		vec4 transformedNormal = normMat * vec4(norm, 1.0);
-		cosTheta = dot(transformedNormal, vec4(lightDir,1));		
+		vec3 transformedNormal = normMat * norm;
+		cosTheta = dot(transformedNormal, lightDir);		
 		vec3 h = (lightDir - normalize(pos)) / (abs(lightDir - normalize(pos)));
-		cosPhi = dot(transformedNormal, vec4(h, 1));
+		cosPhi = dot(transformedNormal, h);
 	}
 `;
 // Fragment shader source code
@@ -164,7 +164,7 @@ class MeshDrawer {
 		gl.useProgram(this.prog);
 		gl.uniformMatrix4fv(this.mvp, false, matrixMVP);
 		gl.uniformMatrix4fv(this.mv, false, matrixMV);
-		gl.uniformMatrix4fv(this.normMat, false, matrixNormal);
+		gl.uniformMatrix3fv(this.normMat, false, matrixNormal);
 
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
@@ -172,16 +172,16 @@ class MeshDrawer {
 		gl.enableVertexAttribArray(this.vertPos);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.texBuffer);
-		gl.vertexAttribPointer(this.textureCoord, 2, gl.FLOAT, false, 0, 0);
+		gl.vertexAttribPointer(this.textureCoord, 2, gl.FLOAT, true, 0, 0);
 		gl.enableVertexAttribArray(this.textureCoord);
 
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, this.tex);
 		gl.uniform1i(this.sampler, 0);
 
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.normBuffer);
-		gl.vertexAttribPointer(this.normals, 3, gl.FLOAT, false, 0, 0);
-		gl.enableVertexAttribArray(this.normals);
+		// gl.bindBuffer(gl.ARRAY_BUFFER, this.normBuffer);
+		// gl.vertexAttribPointer(this.normals, 3, gl.FLOAT, true, 0, 0);
+		// gl.enableVertexAttribArray(this.normals);
 
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
 	}
