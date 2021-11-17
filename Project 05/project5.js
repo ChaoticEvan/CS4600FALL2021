@@ -51,23 +51,15 @@ var modelVS = `
 	uniform vec3 lightDir;	
 
 	varying vec2 texCoord;	
-	varying float cosTheta;
-	varying float cosPhi;
+	varying vec3 normal;
+	varying vec3 position;
 
 	void main()
 	{
 		gl_Position = mvp * vec4(pos, 1);
 		texCoord = txc;
-
-
-		// rough math:
-		// ((norm * lightDir) * texCoord)
-		// + (lightCol * (norm * ( (lightDir - pos) / |lightDir - pos|) )^alpha ) 
-
-		vec3 transformedNormal = normMat * norm;
-		cosTheta = dot(transformedNormal, lightDir);		
-		vec3 h = (lightDir - normalize(pos)) / (abs(lightDir - normalize(pos)));
-		cosPhi = dot(transformedNormal, h);
+		normal = norm;
+		position = pos;
 	}
 `;
 // Fragment shader source code
@@ -77,15 +69,36 @@ var modelFS = `
 	uniform sampler2D tex;
 	uniform float alpha;
 
+	// Uniforms from VS
+	uniform mat3 normMat;
+	uniform vec3 lightDir;	
+
 	varying vec2 texCoord;
-	varying float cosTheta;
-	varying float cosPhi;
+	varying vec3 normal;
+	varying vec3 position;
 
 	void main()
 	{
 		vec3 lightCol = vec3(1,1,1);
-		vec4 texelColor = texture2D(tex, texCoord);
-		gl_FragColor = (cosTheta * texelColor) + vec4((lightCol * pow(cosPhi, alpha), 1));				
+		vec4 Kd = texture2D(tex, texCoord);
+		vec4 Ks = vec4(1,1,1,1);
+		
+		// math:
+		// vec4(1,1,1,1) * ((dot(transNorm, lightDir) * Kd) + 
+		// (Ks * dot(transNorm, h)^alpha))
+
+		vec3 transformedNormal = normMat * normal;
+		float cosTheta = dot(normalize(transformedNormal), lightDir);		
+
+		vec3 hNumer = lightDir - normalize(position);
+		vec3 hDenom = abs(lightDir - normalize(position));
+		vec3 h = hNumer / hDenom;
+		float cosPhi = dot(normalize(transformedNormal), h);
+		
+		vec4 lhs = cosTheta * Kd;
+		vec4 rhs = Ks * pow(cosPhi, alpha);
+
+		gl_FragColor = lhs;
 	}
 `;
 
@@ -93,6 +106,7 @@ class MeshDrawer {
 	// The constructor is a good place for taking care of the necessary initializations.
 	constructor() {
 		this.prog = InitShaderProgram(modelVS, modelFS);
+		gl.useProgram(this.prog);
 
 		this.mvp = gl.getUniformLocation(this.prog, 'mvp');
 		this.sampler = gl.getUniformLocation(this.prog, 'tex');
@@ -123,6 +137,8 @@ class MeshDrawer {
 	//
 	// Note that this method can be called multiple times.
 	setMesh(vertPos, texCoords, normals) {
+		gl.useProgram(this.prog);
+
 		this.vertbuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertPos), gl.STATIC_DRAW);
@@ -159,10 +175,10 @@ class MeshDrawer {
 	// transformation matrix, which is the inverse-transpose of matrixMV.
 	draw(matrixMVP, matrixMV, matrixNormal) {
 		gl.useProgram(this.prog);
+
 		gl.uniformMatrix4fv(this.mvp, false, matrixMVP);
 		gl.uniformMatrix4fv(this.mv, false, matrixMV);
 		gl.uniformMatrix3fv(this.normMat, false, matrixNormal);
-
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.vertexAttribPointer(this.vertPos, 3, gl.FLOAT, false, 0, 0);
@@ -233,7 +249,7 @@ class MeshDrawer {
 	// This method is called to set the shininess of the material
 	setShininess(shininess) {
 		gl.useProgram(this.prog);
-		gl.uniform1i(this.alpha, shininess);
+		gl.uniform1f(this.alpha, shininess);
 	}
 }
 
