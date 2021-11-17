@@ -88,17 +88,15 @@ var modelFS = `
 		// (Ks * dot(transNorm, h)^alpha))
 
 		vec3 transformedNormal = normMat * normal;
-		float cosTheta = dot(normalize(transformedNormal), lightDir);		
+		float cosTheta = dot(transformedNormal, lightDir);		
 
-		vec3 hNumer = lightDir - normalize(position);
-		vec3 hDenom = abs(lightDir - normalize(position));
-		vec3 h = hNumer / hDenom;
-		float cosPhi = dot(normalize(transformedNormal), h);
+		vec3 h = normalize(lightDir - position);
+		float cosPhi = dot(transformedNormal, h);
 		
 		vec4 lhs = cosTheta * Kd;
 		vec4 rhs = Ks * pow(cosPhi, alpha);
 
-		gl_FragColor = lhs;
+		gl_FragColor = vec4(1,1,1,1) * (lhs + rhs);
 	}
 `;
 
