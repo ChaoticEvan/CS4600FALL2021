@@ -136,9 +136,6 @@ class MeshDrawer {
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
 
 		this.numTriangles = vertPos.length / 3;
-		this.vertPos = vertPos;
-		this.texCoords = texCoords;
-		this.normals = normals;
 	}
 
 	// This method is called when the user changes the state of the
@@ -172,16 +169,12 @@ class MeshDrawer {
 		gl.enableVertexAttribArray(this.vertPos);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.texBuffer);
-		gl.vertexAttribPointer(this.textureCoord, 2, gl.FLOAT, true, 0, 0);
+		gl.vertexAttribPointer(this.textureCoord, 2, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.textureCoord);
 
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.tex);
-		gl.uniform1i(this.sampler, 0);
-
-		// gl.bindBuffer(gl.ARRAY_BUFFER, this.normBuffer);
-		// gl.vertexAttribPointer(this.normals, 3, gl.FLOAT, true, 0, 0);
-		// gl.enableVertexAttribArray(this.normals);
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.normBuffer);
+		gl.vertexAttribPointer(this.normals, 3, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(this.normals);
 
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
 	}
@@ -189,6 +182,8 @@ class MeshDrawer {
 	// This method is called to set the texture of the mesh.
 	// The argument is an HTML IMG element containing the texture data.
 	setTexture(img) {
+		gl.useProgram(this.prog);
+
 		this.tex = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, this.tex);
 
@@ -211,6 +206,10 @@ class MeshDrawer {
 			gl.TEXTURE_WRAP_T,
 			gl.REPEAT
 		);
+
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, this.tex);
+		gl.uniform1i(this.sampler, 0);
 	}
 
 	// This method is called when the user changes the state of the
