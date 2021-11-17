@@ -96,7 +96,7 @@ var modelFS = `
 		vec4 lhs = cosTheta * Kd;
 		vec4 rhs = Ks * pow(cosPhi, alpha);
 
-		gl_FragColor = vec4(1,1,1,1) * (lhs + rhs);
+		gl_FragColor = lhs + rhs;
 	}
 `;
 
