@@ -42,21 +42,24 @@ vec3 Shade( Material mtl, vec3 position, vec3 normal, vec3 view )
 	for ( int i=0; i<NUM_LIGHTS; ++i ) {
 		HitInfo currHit;
 		Ray r;
+
 		r.pos = position;
-		r.dir = lights[i].position - r.pos;
+		vec3 lightDir = lights[i].position - position;
+		r.dir = lightDir;
+		
 		bool isShadow = IntersectRay(currHit, r);
 
 		// If no intersections are found on way to light source,
 		// then shade the point
 		if (!isShadow) {
-			float cosTheta = dot(normal, lights[i].position);
-			vec3 h = normalize(lights[i].position + view);
+			float cosTheta = dot(normal, lightDir);
+			vec3 h = normalize(lightDir + view);
 			float cosPhi = dot(normal, h);
 			
 			vec3 lhs = cosTheta * mtl.k_d;
 			vec3 rhs = mtl.k_s * pow(cosPhi, mtl.n);
 
-			color += lights[i].intensity * (lhs + rhs);			
+			color += lights[i].intensity * (lhs + rhs);				
 		}
 	}
 	return color;
@@ -72,8 +75,11 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 	bool foundHit = false;	
 	for ( int i=0; i<NUM_SPHERES; ++i ) {
 		float a = dot(ray.dir, ray.dir);
-		float b = dot((2.0 * ray.dir), ray.pos - spheres[i].center);
-		float c = dot(ray.pos - spheres[i].center, ray.pos - spheres[i].center) - pow(spheres[i].radius, 2.0);
+		vec3 twoD = 2.0 * ray.dir;
+		vec3 pc = ray.pos - spheres[i].center;
+		float b = dot(twoD, pc);
+		float radSquare = pow(spheres[i].radius, 2.0);
+		float c = dot(pc, pc) - radSquare;
 
 		float delta = pow(b, 2.0) - (4.0 * a * c);
 
@@ -119,10 +125,8 @@ vec4 RayTracer( Ray ray )
 			r.dir = hit.normal;
 			
 			if ( IntersectRay( h, r ) ) {
-				// TO-DO: Hit found, so shade the hit point
 				clr += Shade(h.mtl, h.position, h.normal, view);
-				// TO-DO: Update the loop variables for tracing the next reflection ray
-				//hit = h;
+				hit = h;
 			} else {
 				// The refleciton ray did not intersect with anything,
 				// so we are using the environment color
