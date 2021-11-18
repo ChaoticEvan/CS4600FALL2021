@@ -121,8 +121,8 @@ vec4 RayTracer( Ray ray )
 			Ray r;	// this is the reflection ray
 			HitInfo h;	// reflection hit info
 			
-			r.pos = hit.position;
 			r.dir = -view - 2.0 * dot(-view, hit.normal) * hit.normal;
+			r.pos = hit.position + (r.dir * 0.01);
 			
 			if ( IntersectRay( h, r ) ) {
 				clr += Shade(h.mtl, h.position, h.normal, view);
