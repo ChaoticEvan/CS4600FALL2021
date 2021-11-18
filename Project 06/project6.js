@@ -41,6 +41,12 @@ vec3 Shade( Material mtl, vec3 position, vec3 normal, vec3 view )
 	vec3 color = vec3(0,0,0);
 	for ( int i=0; i<NUM_LIGHTS; ++i ) {
 		// TO-DO: Check for shadows
+		HitInfo h;
+		Ray r;
+		r.pos = position;
+		r.dir = 
+		bool isShadow = IntersectRay(h, )
+
 		// TO-DO: If not shadowed, perform shading using the Blinn model
 		color += mtl.k_d * lights[i].intensity;	// change this line
 	}
@@ -54,7 +60,7 @@ vec3 Shade( Material mtl, vec3 position, vec3 normal, vec3 view )
 bool IntersectRay( inout HitInfo hit, Ray ray )
 {
 	hit.t = 1e30;
-	bool foundHit = false;
+	bool foundHit = false;	
 	for ( int i=0; i<NUM_SPHERES; ++i ) {
 		float a = dot(ray.dir, ray.dir);
 		float b = dot((2 * ray.dir), ray.pos - spheres[i].center);
@@ -62,19 +68,21 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 
 		float delta = pow(b, 2) - (4 * a * c);
 
-		// If hit is found, then set info and break from loop
+		// If hit is found, then check to see if its closest hit
 		if (delta >= 0) {
 			foundHit = true;
 
 			float tNumer = -b - sqrt(delta);
 			float tDenom = 2 * a;
+			float t = tNumer / tDenom;
 
-			hit.t = tNumer / tDenom;
-			hit.position = ray.pos + (hit.t * ray.dir);
-			hit.normal = hit.position - spheres[i].center;
-			hit.mtl = spheres[i].mtl;
-
-			break;
+			// If current sphere is closest, update hit information
+			if (hit.t > t) {
+				hit.t = t;
+				hit.position = ray.pos + (hit.t * ray.dir);
+				hit.normal = hit.position - spheres[i].center;
+				hit.mtl = spheres[i].mtl;
+			}
 		}
 	}
 	return foundHit;
