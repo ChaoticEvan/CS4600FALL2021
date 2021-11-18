@@ -40,15 +40,24 @@ vec3 Shade( Material mtl, vec3 position, vec3 normal, vec3 view )
 {
 	vec3 color = vec3(0,0,0);
 	for ( int i=0; i<NUM_LIGHTS; ++i ) {
-		// TO-DO: Check for shadows
-		HitInfo h;
+		HitInfo currHit;
 		Ray r;
 		r.pos = position;
-		r.dir = 
-		bool isShadow = IntersectRay(h, )
+		r.dir = lights[i].position - r.pos;
+		bool isShadow = IntersectRay(currHit, r);
 
-		// TO-DO: If not shadowed, perform shading using the Blinn model
-		color += mtl.k_d * lights[i].intensity;	// change this line
+		// If no intersections are found on way to light source,
+		// then shade the point
+		if (!isShadow) {
+			float cosTheta = dot(normal, lights[i].position);
+			vec3 h = normalize(lights[i].position + view);
+			float cosPhi = dot(normal, h);
+			
+			vec3 lhs = cosTheta * mtl.k_d;
+			vec3 rhs = mtl.k_s * pow(cosPhi, mtl.n);
+
+			color += lights[i].intensity * (lhs + rhs);			
+		}
 	}
 	return color;
 }
@@ -63,17 +72,17 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 	bool foundHit = false;	
 	for ( int i=0; i<NUM_SPHERES; ++i ) {
 		float a = dot(ray.dir, ray.dir);
-		float b = dot((2 * ray.dir), ray.pos - spheres[i].center);
-		float c = dot(ray.pos - spheres[i].center, ray.pos - spheres[i].center) - pow(spheres[i].radius, 2);
+		float b = dot((2.0 * ray.dir), ray.pos - spheres[i].center);
+		float c = dot(ray.pos - spheres[i].center, ray.pos - spheres[i].center) - pow(spheres[i].radius, 2.0);
 
-		float delta = pow(b, 2) - (4 * a * c);
+		float delta = pow(b, 2.0) - (4.0 * a * c);
 
 		// If hit is found, then check to see if its closest hit
-		if (delta >= 0) {
+		if (delta >= 0.0) {
 			foundHit = true;
 
 			float tNumer = -b - sqrt(delta);
-			float tDenom = 2 * a;
+			float tDenom = 2.0 * a;
 			float t = tNumer / tDenom;
 
 			// If current sphere is closest, update hit information
@@ -106,11 +115,14 @@ vec4 RayTracer( Ray ray )
 			Ray r;	// this is the reflection ray
 			HitInfo h;	// reflection hit info
 			
-			// TO-DO: Initialize the reflection ray
+			r.pos = hit.position;
+			r.dir = hit.normal;
 			
 			if ( IntersectRay( h, r ) ) {
 				// TO-DO: Hit found, so shade the hit point
+				clr += Shade(h.mtl, h.position, h.normal, view);
 				// TO-DO: Update the loop variables for tracing the next reflection ray
+				//hit = h;
 			} else {
 				// The refleciton ray did not intersect with anything,
 				// so we are using the environment color
