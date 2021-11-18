@@ -71,7 +71,7 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 
 			hit.t = tNumer / tDenom;
 			hit.position = ray.pos + (hit.t * ray.dir);
-			hit.normal = 
+			hit.normal = hit.position - spheres[i].center;
 			hit.mtl = spheres[i].mtl;
 
 			break;
