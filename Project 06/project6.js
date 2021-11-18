@@ -43,8 +43,8 @@ vec3 Shade( Material mtl, vec3 position, vec3 normal, vec3 view )
 		HitInfo currHit;
 		Ray r;
 
-		r.pos = position;
-		vec3 lightDir = lights[i].position - position;
+		vec3 lightDir = normalize(lights[i].position - position);
+		r.pos = position + (0.01 * lightDir);
 		r.dir = lightDir;
 		
 		bool isShadow = IntersectRay(currHit, r);
@@ -59,8 +59,9 @@ vec3 Shade( Material mtl, vec3 position, vec3 normal, vec3 view )
 			vec3 lhs = cosTheta * mtl.k_d;
 			vec3 rhs = mtl.k_s * pow(cosPhi, mtl.n);
 
-			color += lights[i].intensity * (lhs + rhs);				
-		}
+			//color += lights[i].intensity * (lhs + rhs);
+			color += mtl.k_d;
+		} 
 	}
 	return color;
 }
@@ -85,14 +86,13 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 
 		// If hit is found, then check to see if its closest hit
 		if (delta >= 0.0) {
-			foundHit = true;
-
 			float tNumer = -b - sqrt(delta);
 			float tDenom = 2.0 * a;
 			float t = tNumer / tDenom;
 
 			// If current sphere is closest, update hit information
-			if (hit.t > t) {
+			if (hit.t > t && t > 0.0) {
+				foundHit = true;
 				hit.t = t;
 				hit.position = ray.pos + (hit.t * ray.dir);
 				hit.normal = hit.position - spheres[i].center;
@@ -122,7 +122,7 @@ vec4 RayTracer( Ray ray )
 			HitInfo h;	// reflection hit info
 			
 			r.pos = hit.position;
-			r.dir = hit.normal;
+			r.dir = -view - 2.0 * dot(-view, hit.normal) * hit.normal;
 			
 			if ( IntersectRay( h, r ) ) {
 				clr += Shade(h.mtl, h.position, h.normal, view);
