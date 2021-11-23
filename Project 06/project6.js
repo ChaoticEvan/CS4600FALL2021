@@ -44,23 +44,23 @@ vec3 Shade( Material mtl, vec3 position, vec3 normal, vec3 view )
 		Ray r;
 
 		vec3 lightDir = normalize(lights[i].position - position);
-		r.pos = position + (0.01 * lightDir);
+		r.pos = position + (0.001 * lightDir);
 		r.dir = lightDir;
 		
 		bool isShadow = IntersectRay(currHit, r);
 
+		float cosTheta = dot(normal, lightDir);
+		vec3 h = normalize(lightDir + view);
+		float cosPhi = dot(normal, h);
+
 		// If no intersections are found on way to light source,
 		// then shade the point
-		if (!isShadow) {
-			float cosTheta = dot(normal, lightDir);
-			vec3 h = normalize(lightDir + view);
-			float cosPhi = dot(normal, h);
-			
-			vec3 lhs = cosTheta * mtl.k_d;
-			vec3 rhs = mtl.k_s * pow(cosPhi, mtl.n);
+		if (!isShadow) {			
+			vec3 lhs = max(0.0, cosTheta) * mtl.k_d;
+			vec3 rhs = mtl.k_s * pow(max(0.0, cosPhi), mtl.n);
 
-			//color += lights[i].intensity * (lhs + rhs);
-			color += mtl.k_d;
+			color += lhs + rhs;
+			//color += mtl.k_d * lights[i].intensity;
 		} 
 	}
 	return color;
@@ -122,11 +122,14 @@ vec4 RayTracer( Ray ray )
 			HitInfo h;	// reflection hit info
 			
 			r.dir = -view - 2.0 * dot(-view, hit.normal) * hit.normal;
-			r.pos = hit.position + (r.dir * 0.01);
+			r.pos = hit.position + (r.dir * 0.001);
 			
 			if ( IntersectRay( h, r ) ) {
 				clr += Shade(h.mtl, h.position, h.normal, view);
+				
 				hit = h;
+				k_s = h.mtl.k_s;
+				view = normalize(-r.dir);
 			} else {
 				// The refleciton ray did not intersect with anything,
 				// so we are using the environment color
