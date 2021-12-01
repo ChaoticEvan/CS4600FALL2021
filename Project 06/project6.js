@@ -76,11 +76,8 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 	bool foundHit = false;	
 	for ( int i=0; i<NUM_SPHERES; ++i ) {
 		float a = dot(ray.dir, ray.dir);
-		vec3 twoD = 2.0 * ray.dir;
-		vec3 pc = ray.pos - spheres[i].center;
-		float b = dot(twoD, pc);
-		float radSquare = pow(spheres[i].radius, 2.0);
-		float c = dot(pc, pc) - radSquare;
+		float b = dot(2.0 * ray.dir, ray.pos - spheres[i].center);
+		float c = dot(ray.pos - spheres[i].center, ray.pos - spheres[i].center) - pow(spheres[i].radius, 2.0);
 
 		float delta = pow(b, 2.0) - (4.0 * a * c);
 
@@ -94,7 +91,7 @@ bool IntersectRay( inout HitInfo hit, Ray ray )
 			if (hit.t > t && t > 0.0) {
 				foundHit = true;
 				hit.t = t;
-				hit.position = ray.pos + (hit.t * ray.dir);
+				hit.position = ray.pos + (t * ray.dir);
 				hit.normal = hit.position - spheres[i].center;
 				hit.mtl = spheres[i].mtl;
 			}
@@ -121,7 +118,7 @@ vec4 RayTracer( Ray ray )
 			Ray r;	// this is the reflection ray
 			HitInfo h;	// reflection hit info
 			
-			r.dir = -view - 2.0 * dot(-view, hit.normal) * hit.normal;
+			r.dir = 2.0 * (dot(normalize(view), hit.normal)) * hit.normal - normalize(view);
 			r.pos = hit.position + (r.dir * 0.001);
 			
 			if ( IntersectRay( h, r ) ) {
@@ -139,7 +136,7 @@ vec4 RayTracer( Ray ray )
 		}
 		return vec4( clr, 1 );	// return the accumulated color, including the reflections
 	} else {
-		return vec4( textureCube( envMap, ray.dir.xzy ).rgb, 0 );	// return the environment color
+		return vec4( textureCube( envMap, ray.dir.xzy ).rgb, 1 );	// return the environment color
 	}
 }
 `;
