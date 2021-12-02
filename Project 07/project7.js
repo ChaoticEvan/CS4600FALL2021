@@ -95,7 +95,7 @@ var modelFS = `
 		vec4 lhs = cosTheta * Kd;
 		vec4 rhs = Ks * pow(cosPhi, alpha);
 
-		gl_FragColor = lhs + rhs;
+		gl_FragColor = vec4(1,gl_FragCoord.z*gl_FragCoord.z,0,1);
 	}
 `;
 
@@ -251,12 +251,70 @@ class MeshDrawer {
 // It updates the given positions and velocities.
 function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, particleMass, gravity, restitution) {
 	var forces = Array(positions.length); // The total for per particle
+	forces.fill(0);
 
 	// [TO-DO] Compute the total force of each particle
+	for (var i = 0; i < forces.length; ++i) {
+		forces[i] += particleMass * gravity;
+	}
+
+	for (var i = 0; i < springs.length; ++i) {
+		// Get position and velocity vectors for curr p0 and p1
+		var posX0, posY0, posZ0,
+			posX1, posY1, posZ1,
+			velX0, velY0, velZ0,
+			velX1, velY1, velZ1;
+
+		posX0 = positions[springs[i].p0].x;
+		posY0 = positions[springs[i].p0].y;
+		posZ0 = positions[springs[i].p0].z;
+
+		posX1 = positions[springs[i].p1].x;
+		posY1 = positions[springs[i].p1].y;
+		posZ1 = positions[springs[i].p1].z;
+
+		velX0 = velocities[springs[i].p0].x;
+		velY0 = velocities[springs[i].p0].y;
+		velZ0 = velocities[springs[i].p0].z;
+
+		velX1 = velocities[springs[i].p1].x;
+		velY1 = velocities[springs[i].p1].y;
+		velZ1 = velocities[springs[i].p1].z;
+
+		// Init vectors
+		var posVector0 = new Vec3();
+		posVector0.init(posX0, posY0, posZ0);
+
+		var posVector1 = new Vec3();
+		posVector1.init(posX1, posY1, posZ1);
+
+		var velVector0 = new Vec3();
+		velVector0.init(velX0, velY0, velZ0);
+
+		var velVector1 = new Vec3();
+		velVector1.init(velX1, velY1, velZ1);
+
+		// Calculate spring force
+		var lVector = posVector1.sub(posVector0);
+		var l = lVector.len();
+		var dVector = posVector1.sub(posVector0);
+		var d = dVector.div(l);
+
+		var springForce = stiffness * (l - springs[i].rest) * d;
+
+		// Calculate damping Force
+		var v1MinusV0 = velVector1.sub(velVector0);
+		var lDot = v1MinusV0.dot(d);
+
+		var dampingForce = stiffness * lDot * d;
+
+		// Update forces
+		forces[springs[i].p0] += springForce + dampingForce;
+		forces[springs[i].p1] - + springForce + dampingForce;
+	}
 
 	// [TO-DO] Update positions and velocities
 
 	// [TO-DO] Handle collisions
-
 }
 
