@@ -330,8 +330,31 @@ function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, par
 		positions[i].inc(dtV);
 	}
 
-	// [TO-DO] Handle collisions
+	// Handling collisions
+	for (var i = 0; i < positions.length; ++i) {
+		// If falling through the floor
+		if (positions[i].y <= -1) {
+
+			// Find h which is height, but -1 will always be there, so
+			// positions[i].y - -1 = positions[i].y + 1
+			var h = Math.abs(positions[i].y + 1);
+			var hPrime = restitution * h;
+
+			for (var j = 0; j < positions.length; ++j) {
+				positions[j].y = hPrime + h
+			}
+
+			//positions[i].y = hPrime + h;
 
 
+		}
+
+		// If flying through ceiling
+		if (positions[i].y > 1) {
+			var h = positions[i].y - 1;
+
+			// TODO update positions and velocities
+		}
+	}
 }
 
