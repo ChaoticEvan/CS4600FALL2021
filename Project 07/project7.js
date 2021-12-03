@@ -253,7 +253,7 @@ function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, par
 	var forces = Array(positions.length); // The total for per particle
 	forces.fill(0);
 
-	// [TO-DO] Compute the total force of each particle
+	// Update forces
 	for (var i = 0; i < forces.length; ++i) {
 		forces[i] += particleMass * gravity;
 	}
@@ -313,7 +313,22 @@ function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, par
 		forces[springs[i].p1] - + springForce + dampingForce;
 	}
 
-	// [TO-DO] Update positions and velocities
+	// Update positions and velocities
+	for (var i = 0; i < positions.length; ++i) {
+		// Calculate new acceleration
+		var a = forces[i] / particleMass;
+
+		// Calculate new velocity
+		var dtA = dt * a;
+		var dtAVector = new Vec3(dtA, dtA, dtA);
+		velocities[i].inc(dtAVector);
+
+		// Calculate new position
+		var dtV = dt * velocities[i];
+		var dtVVector = new Vec3(dtV, dtV, dtV);
+		positions[i].inc(dtVVector);
+
+	}
 
 	// [TO-DO] Handle collisions
 }
