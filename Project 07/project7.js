@@ -79,7 +79,7 @@ var modelFS = `
 	void main()
 	{
 		vec3 lightCol = vec3(1,1,1);
-		vec4 Kd = texture2D(tex, texCoord);
+		vec4 Kd = vec4(1,1,1,1);
 		vec4 Ks = vec4(1,1,1,1);
 		
 		// math:
@@ -95,6 +95,7 @@ var modelFS = `
 		vec4 lhs = cosTheta * Kd;
 		vec4 rhs = Ks * pow(cosPhi, alpha);
 
+		//gl_FragColor = lhs + rhs;
 		gl_FragColor = vec4(1,gl_FragCoord.z*gl_FragCoord.z,0,1);
 	}
 `;
@@ -251,11 +252,11 @@ class MeshDrawer {
 // It updates the given positions and velocities.
 function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, particleMass, gravity, restitution) {
 	var forces = Array(positions.length); // The total for per particle
-	forces.fill(0);
+	forces.fill(new Vec3(0, 0, 0));
 
 	// Update forces
 	for (var i = 0; i < forces.length; ++i) {
-		forces[i] += particleMass * gravity;
+		forces[i].inc(gravity.mul(particleMass));
 	}
 
 	for (var i = 0; i < springs.length; ++i) {
@@ -299,37 +300,38 @@ function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, par
 		var l = lVector.len();
 		var dVector = posVector1.sub(posVector0);
 		var d = dVector.div(l);
+		var lhs = stiffness * (l - springs[i].rest);
 
-		var springForce = stiffness * (l - springs[i].rest) * d;
+		var springForce = d.mul(lhs);
 
 		// Calculate damping Force
 		var v1MinusV0 = velVector1.sub(velVector0);
 		var lDot = v1MinusV0.dot(d);
+		var dampingLhs = damping * lDot;
 
-		var dampingForce = stiffness * lDot * d;
+		var dampingForce = d.mul(dampingLhs);
 
 		// Update forces
-		forces[springs[i].p0] += springForce + dampingForce;
-		forces[springs[i].p1] - + springForce + dampingForce;
+		forces[springs[i].p0].inc(springForce.add(dampingForce));
+		forces[springs[i].p1].dec(springForce.add(dampingForce));
 	}
 
-	// Update positions and velocities
+	// Update positions and velocities using semi-implicit euler integration
 	for (var i = 0; i < positions.length; ++i) {
 		// Calculate new acceleration
-		var a = forces[i] / particleMass;
+		var a = forces[i].div(particleMass);
 
 		// Calculate new velocity
-		var dtA = dt * a;
-		var dtAVector = new Vec3(dtA, dtA, dtA);
-		velocities[i].inc(dtAVector);
+		var dtA = a.mul(dt);
+		velocities[i].inc(dtA);
 
 		// Calculate new position
-		var dtV = dt * velocities[i];
-		var dtVVector = new Vec3(dtV, dtV, dtV);
-		positions[i].inc(dtVVector);
-
+		var dtV = velocities[i].mul(dt);
+		positions[i].inc(dtV);
 	}
 
 	// [TO-DO] Handle collisions
+
+
 }
 
