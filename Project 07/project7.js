@@ -312,8 +312,9 @@ function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, par
 		var dampingForce = d.mul(dampingLhs);
 
 		// Update forces
-		forces[springs[i].p0].inc(springForce.add(dampingForce));
-		forces[springs[i].p1].dec(springForce.add(dampingForce));
+		var totalForceVector = springForce.add(dampingForce);
+		forces[springs[i].p0].inc(totalForceVector);
+		forces[springs[i].p1].dec(totalForceVector);
 	}
 
 	// Update positions and velocities using semi-implicit euler integration
@@ -332,31 +333,64 @@ function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, par
 
 	// Handling collisions
 	for (var i = 0; i < positions.length; ++i) {
-		// If falling through the floor
+		// If falling through the floor or ceiling
 		if (positions[i].y <= -1) {
-
-			// Find h which is height, but -1 will always be there, so
-			// positions[i].y - -1 = positions[i].y + 1
 			var h = Math.abs(positions[i].y + 1);
 			var hPrime = restitution * h;
 
+			for (var j = 0; j < positions.length; ++j) {
+				positions[j].y += hPrime + h;
+				velocities[j].y = -restitution * velocities[j].y;
+			}
+		}
+		if (positions[i].y > 1) {
+			var h = positions[i].y - 1;
+			var hPrime = restitution * h;
 
 			for (var j = 0; j < positions.length; ++j) {
-				if (positions[j].y > -1) {
-					positions[j].y += hPrime + h
-				}
-				else {
-					positions[j].y = hPrime + h;
-				}
-				velocities[j].y = -restitution * velocities[j].y
+				positions[j].y += hPrime + h;
+				velocities[j].y = -restitution * velocities[j].y;
 			}
 		}
 
-		// If flying through ceiling
-		if (positions[i].y > 1) {
-			var h = positions[i].y - 1;
+		// If going through right or left wall
+		if (positions[i].x < -1) {
+			var h = Math.abs(positions[i].x + 1);
+			var hPrime = restitution * h;
 
-			// TODO update positions and velocities
+			for (var j = 0; j < positions.length; ++j) {
+				positions[j].x += hPrime + h;
+				velocities[j].x = -restitution * velocities[j].x
+			}
+		}
+		if (positions[i].x > 1) {
+			var h = Math.abs(positions[i].x - 1);
+			var hPrime = restitution * h;
+
+			for (var j = 0; j < positions.length; ++j) {
+				positions[j].x += hPrime + h;
+				velocities[j].x = -restitution * velocities[j].x
+			}
+		}
+
+		// If going through back or front wall
+		if (positions[i].z < -1) {
+			var h = Math.abs(positions[i].z + 1);
+			var hPrime = restitution * h;
+
+			for (var j = 0; j < positions.length; ++j) {
+				positions[j].z += hPrime * h;
+				velocities[j].z = -restitution * velocities[j].z;
+			}
+		}
+		if (positions[i].z > 1) {
+			var h = Math.abs(positions[i].z - 1);
+			var hPrime = restitution * h;
+
+			for (var j = 0; j < positions.length; ++j) {
+				positions[j].z += hPrime * h;
+				velocities[j].z = -restitution * velocities[j].z;
+			}
 		}
 	}
 }
