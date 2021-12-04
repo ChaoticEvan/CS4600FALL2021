@@ -260,7 +260,7 @@ function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, par
 	}
 
 	for (var i = 0; i < springs.length; ++i) {
-		// Get position and velocity vectors for curr p0 and p1
+		// Get position and velocity vector values for curr p0 and p1
 		var posX0, posY0, posZ0,
 			posX1, posY1, posZ1,
 			velX0, velY0, velZ0,
@@ -340,13 +340,16 @@ function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, par
 			var h = Math.abs(positions[i].y + 1);
 			var hPrime = restitution * h;
 
+
 			for (var j = 0; j < positions.length; ++j) {
-				positions[j].y = hPrime + h
+				if (positions[j].y > -1) {
+					positions[j].y += hPrime + h
+				}
+				else {
+					positions[j].y = hPrime + h;
+				}
+				velocities[j].y = -restitution * velocities[j].y
 			}
-
-			//positions[i].y = hPrime + h;
-
-
 		}
 
 		// If flying through ceiling
