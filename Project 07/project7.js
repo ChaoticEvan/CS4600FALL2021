@@ -95,8 +95,8 @@ var modelFS = `
 		vec4 lhs = cosTheta * Kd;
 		vec4 rhs = Ks * pow(cosPhi, alpha);
 
-		//gl_FragColor = lhs + rhs;
-		gl_FragColor = vec4(1,gl_FragCoord.z*gl_FragCoord.z,0,1);
+		gl_FragColor = lhs + rhs;
+		//gl_FragColor = vec4(1,gl_FragCoord.z*gl_FragCoord.z,0,1);
 	}
 `;
 
@@ -257,11 +257,12 @@ function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, par
 		forces[i] = new Vec3(0, 0, 0);
 	}
 
-	// Update forces
+	// Update gravity forces
 	for (var i = 0; i < forces.length; ++i) {
 		forces[i].inc(gravity.mul(particleMass));
 	}
 
+	// Update spring forces
 	for (var i = 0; i < springs.length; ++i) {
 		// Get position and velocity vector values for curr p0 and p1
 		var posX0, posY0, posZ0,
