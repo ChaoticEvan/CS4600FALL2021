@@ -252,7 +252,10 @@ class MeshDrawer {
 // It updates the given positions and velocities.
 function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, particleMass, gravity, restitution) {
 	var forces = Array(positions.length); // The total for per particle
-	forces.fill(new Vec3(0, 0, 0));
+	// Fill forces array with loop to avoid duplicate object references
+	for (var i = 0; i < forces.length; ++i) {
+		forces[i] = new Vec3(0, 0, 0);
+	}
 
 	// Update forces
 	for (var i = 0; i < forces.length; ++i) {
@@ -338,19 +341,15 @@ function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, par
 			var h = Math.abs(positions[i].y + 1);
 			var hPrime = restitution * h;
 
-			for (var j = 0; j < positions.length; ++j) {
-				positions[j].y += hPrime + h;
-				velocities[j].y = -restitution * velocities[j].y;
-			}
+			positions[i].y += hPrime + h;
+			velocities[i].y = -restitution * velocities[i].y;
 		}
 		if (positions[i].y > 1) {
 			var h = positions[i].y - 1;
 			var hPrime = restitution * h;
 
-			for (var j = 0; j < positions.length; ++j) {
-				positions[j].y += hPrime + h;
-				velocities[j].y = -restitution * velocities[j].y;
-			}
+			positions[i].y -= hPrime + h;
+			velocities[i].y = -restitution * velocities[i].y;
 		}
 
 		// If going through right or left wall
@@ -358,19 +357,16 @@ function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, par
 			var h = Math.abs(positions[i].x + 1);
 			var hPrime = restitution * h;
 
-			for (var j = 0; j < positions.length; ++j) {
-				positions[j].x += hPrime + h;
-				velocities[j].x = -restitution * velocities[j].x
-			}
+			positions[i].x += hPrime + h;
+			velocities[i].x = -restitution * velocities[i].x
+
 		}
 		if (positions[i].x > 1) {
 			var h = Math.abs(positions[i].x - 1);
 			var hPrime = restitution * h;
 
-			for (var j = 0; j < positions.length; ++j) {
-				positions[j].x += hPrime + h;
-				velocities[j].x = -restitution * velocities[j].x
-			}
+			positions[i].x -= hPrime + h;
+			velocities[i].x = -restitution * velocities[i].x
 		}
 
 		// If going through back or front wall
@@ -378,19 +374,15 @@ function SimTimeStep(dt, positions, velocities, springs, stiffness, damping, par
 			var h = Math.abs(positions[i].z + 1);
 			var hPrime = restitution * h;
 
-			for (var j = 0; j < positions.length; ++j) {
-				positions[j].z += hPrime * h;
-				velocities[j].z = -restitution * velocities[j].z;
-			}
+			positions[i].z += hPrime * h;
+			velocities[i].z = -restitution * velocities[i].z;
 		}
 		if (positions[i].z > 1) {
 			var h = Math.abs(positions[i].z - 1);
 			var hPrime = restitution * h;
 
-			for (var j = 0; j < positions.length; ++j) {
-				positions[j].z += hPrime * h;
-				velocities[j].z = -restitution * velocities[j].z;
-			}
+			positions[i].z -= hPrime * h;
+			velocities[i].z = -restitution * velocities[i].z;
 		}
 	}
 }
